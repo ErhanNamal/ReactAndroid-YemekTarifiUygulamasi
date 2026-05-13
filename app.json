@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "FoodRecipes",
+    "slug": "food-recipes",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.foodrecipes.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bbf2326a-cf68-404b-b723-79b127d5ce93"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/bbf2326a-cf68-404b-b723-79b127d5ce93"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "cli": {
+      "appVersionSource": "remote"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}
