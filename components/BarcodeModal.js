@@ -1,5 +1,5 @@
 import React from "react";
-import { Modal, View, TouchableOpacity, Image, Text, Linking } from "react-native";
+import { Alert, Modal, View, TouchableOpacity, Image, Text, Linking } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useApp } from "../src/context/AppContext";
 
@@ -12,6 +12,8 @@ export default function BarcodeModal({ visible, onClose }) {
     const canOpen = await Linking.canOpenURL(RESTAURANT_URL);
     if (canOpen) {
       await Linking.openURL(RESTAURANT_URL);
+    } else {
+      Alert.alert("Hata", "Web sitesi açılamıyor.");
     }
   };
 
@@ -94,7 +96,6 @@ export default function BarcodeModal({ visible, onClose }) {
             style={{
               flexDirection: "row",
               width: "100%",
-              gap: 12,
             }}
           >
             <TouchableOpacity
@@ -105,6 +106,7 @@ export default function BarcodeModal({ visible, onClose }) {
                 paddingVertical: 12,
                 paddingHorizontal: 16,
                 borderRadius: 8,
+                marginRight: 12,
                 flexDirection: "row",
                 alignItems: "center",
                 justifyContent: "center",

@@ -7,8 +7,7 @@ import BarcodeModal from "../components/BarcodeModal";
 import { useApp } from "../src/context/AppContext";
 
 export default function Favoriler({ navigation }) {
-  const { favoriIdler, tarifler } = useApp();
-  const { theme } = useApp();
+  const { favoriIdler, tarifler, theme } = useApp();
   const [barcodeModalVisible, setBarcodeModalVisible] = useState(false);
 
   // Header'ı barkod butonu ile güncelle
