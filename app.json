@@ -42,13 +42,13 @@
       "appVersionSource": "remote"
     },
     "plugins": [
-      "expo-font",
       [
         "expo-camera",
         {
           "cameraPermission": "Tarifleri okumak ve web sitelerini açmak için kameraya erişim izni gereklidir."
         }
-      ]
+      ],
+      "expo-font"
     ]
   }
 }
