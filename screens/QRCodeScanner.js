@@ -1,194 +1,152 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, TouchableOpacity, Alert } from "react-native";
-import { CameraView } from "expo-camera";
+import React, { useState } from "react";
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Linking, Dimensions } from "react-native";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { Ionicons } from "@expo/vector-icons";
 import { useApp } from "../src/context/AppContext";
 
+const { width } = Dimensions.get("window");
+
 export default function QRCodeScanner({ navigation }) {
-  const [permission, requestPermission] = React.useState(null);
-  const { theme, tarifler } = useApp();
+  // 1. Kamera İzni Yönetimi
+  const [permission, requestPermission] = useCameraPermissions();
+  const { theme } = useApp();
   const [isScanning, setIsScanning] = useState(true);
 
-  useEffect(() => {
-    const getCameraPermission = async () => {
-      const { status } = await CameraView.requestCameraPermissionsAsync();
-      requestPermission(status === "granted");
-    };
-    getCameraPermission();
-  }, []);
+  // 2. QR Kod Okunduğunda Çalışacak Fonksiyon
+  const handleBarcodeScanned = async ({ data }) => {
+    if (!isScanning) return;
+    setIsScanning(false); // Aynı kodu üst üste okumasını engelle
 
-  const handleBarcodeScanned = ({ type, data }) => {
-    setIsScanning(false);
-    
-    // QR koddan URL veya tarif ID'si alındı
-    console.log("QR Kod Scanned:", data);
-    
-    let tarifId = null;
+    // Gelen verinin URL olup olmadığını kontrol et
+    const isUrl = data.trim().startsWith("http://") || data.trim().startsWith("https://");
 
-    // URL ise, URL'den tarif ID'sini ayıklamaya çalış
-    if (data.includes("http")) {
-      try {
-        const url = new URL(data);
-        tarifId = url.searchParams.get("id");
-      } catch (e) {
-        Alert.alert("Hata", "QR kod işlenemedi.");
-        setIsScanning(true);
-        return;
-      }
+    if (isUrl) {
+      Alert.alert(
+        "Bağlantıyı Aç",
+        "Bu web sitesine gitmek istiyor musunuz?\n\n" + data,
+        [
+          { 
+            text: "İptal", 
+            onPress: () => setIsScanning(true), 
+            style: "cancel" 
+          },
+          { 
+            text: "Git", 
+            onPress: () => {
+              Linking.openURL(data).catch(() => {
+                Alert.alert("Hata", "Tarayıcı açılamadı.");
+                setIsScanning(true);
+              });
+            } 
+          }
+        ]
+      );
     } else {
-      // Sadece ID ise
-      tarifId = data;
-    }
-
-    if (tarifId) {
-      // Tarifler içinde bu ID'yi bul
-      const tarif = tarifler.find((t) => t.id === tarifId);
-      if (tarif) {
-        // Tarifi bul ve detay sayfasına yönlendir
-        navigation.navigate("TarifDetay", tarif);
-      } else {
-        Alert.alert("Tarif Bulunamadı", "Taşınan QR kod hiçbir tarife karşılık gelmiyor.");
-        setIsScanning(true);
-      }
-    } else {
-      Alert.alert("Geçersiz QR Kod", "Bu QR kod bir tarif bağlantısı değil.");
-      setIsScanning(true);
+      Alert.alert(
+        "Geçersiz QR",
+        "Bu QR kod bir web sitesi bağlantısı içermiyor:\n" + data,
+        [{ text: "Tamam", onPress: () => setIsScanning(true) }]
+      );
     }
   };
 
-  if (permission === null) {
+  // 3. Yükleme ve İzin Durumları
+  if (!permission) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: theme.textPrimary }}>Kamera izni isteniyor...</Text>
+      <View style={[styles.center, { backgroundColor: theme.background }]}>
+        <Text style={{ color: theme.textPrimary }}>Kamera hazırlanıyor...</Text>
       </View>
     );
   }
 
-  if (permission === false) {
+  if (!permission.granted) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.background, justifyContent: "center", alignItems: "center" }}>
-        <Ionicons name="camera-off" size={60} color={theme.textSecondary} style={{ marginBottom: 20 }} />
-        <Text style={{ color: theme.textPrimary, fontSize: 18, fontWeight: "bold", marginBottom: 10 }}>
-          Kamera İzni Gerekli
-        </Text>
-        <Text style={{ color: theme.textSecondary, textAlign: "center", paddingHorizontal: 20, marginBottom: 30 }}>
-          QR kod okuyabilmek için kamera izni vermeniz gerekiyor.
+      <View style={[styles.center, { backgroundColor: theme.background }]}>
+        <Ionicons name="camera-off" size={64} color={theme.textSecondary} />
+        <Text style={[styles.title, { color: theme.textPrimary }]}>Kamera İzni Gerekli</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          QR kodları tarayabilmek için kamera erişimine izin vermelisiniz.
         </Text>
         <TouchableOpacity
           onPress={requestPermission}
-          style={{ backgroundColor: theme.primary, paddingHorizontal: 30, paddingVertical: 12, borderRadius: 8 }}
+          style={[styles.mainButton, { backgroundColor: theme.primary }]}
         >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>İzin Ver</Text>
+          <Text style={styles.buttonText}>İzin Ver</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
+  // 4. Kamera Görünümü ve Arayüzü
   return (
-    <View style={{ flex: 1, backgroundColor: theme.background }}>
+    <View style={{ flex: 1 }}>
       <CameraView
-        style={{ flex: 1 }}
+        style={StyleSheet.absoluteFillObject}
+        facing="back"
         onBarcodeScanned={isScanning ? handleBarcodeScanned : undefined}
         barcodeScannerSettings={{
           barcodeTypes: ["qr"],
         }}
       >
-        {/* Scan Frame Overlay */}
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <View
-            style={{
-              width: 250,
-              height: 250,
-              borderWidth: 3,
-              borderColor: "#4CAF50",
-              borderRadius: 12,
-              backgroundColor: "transparent",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
-            <View
-              style={{
-                position: "absolute",
-                width: 20,
-                height: 20,
-                borderTopWidth: 3,
-                borderLeftWidth: 3,
-                borderTopColor: "#4CAF50",
-                borderLeftColor: "#4CAF50",
-                top: -3,
-                left: -3,
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                width: 20,
-                height: 20,
-                borderTopWidth: 3,
-                borderRightWidth: 3,
-                borderTopColor: "#4CAF50",
-                borderRightColor: "#4CAF50",
-                top: -3,
-                right: -3,
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                width: 20,
-                height: 20,
-                borderBottomWidth: 3,
-                borderLeftWidth: 3,
-                borderBottomColor: "#4CAF50",
-                borderLeftColor: "#4CAF50",
-                bottom: -3,
-                left: -3,
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                width: 20,
-                height: 20,
-                borderBottomWidth: 3,
-                borderRightWidth: 3,
-                borderBottomColor: "#4CAF50",
-                borderRightColor: "#4CAF50",
-                bottom: -3,
-                right: -3,
-              }}
-            />
+        {/* Görsel Katman (Overlay) */}
+        <View style={styles.overlay}>
+          <View style={styles.unfocusedContainer} />
+          <View style={styles.focusedRow}>
+            <View style={styles.unfocusedContainer} />
+            <View style={styles.targetBox}>
+              {/* Köşe Çizgileri */}
+              <View style={[styles.corner, styles.topLeft]} />
+              <View style={[styles.corner, styles.topRight]} />
+              <View style={[styles.corner, styles.bottomLeft]} />
+              <View style={[styles.corner, styles.bottomRight]} />
+            </View>
+            <View style={styles.unfocusedContainer} />
           </View>
-
-          <Text style={{ color: "#fff", marginTop: 50, fontSize: 16, fontWeight: "bold", textAlign: "center" }}>
-            QR Kod Tarayın
-          </Text>
+          <View style={styles.unfocusedContainer}>
+            <Text style={styles.infoText}>QR Kodu Kutunun İçine Yerleştirin</Text>
+          </View>
         </View>
 
-        {/* Close Button */}
+        {/* Kapatma Butonu */}
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{
-            position: "absolute",
-            top: 20,
-            left: 20,
-            backgroundColor: "rgba(0, 0, 0, 0.6)",
-            padding: 12,
-            borderRadius: 50,
-            zIndex: 10,
-          }}
+          style={styles.closeButton}
         >
-          <Ionicons name="close" size={24} color="#fff" />
+          <Ionicons name="close" size={30} color="#fff" />
         </TouchableOpacity>
       </CameraView>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", padding: 20 },
+  title: { fontSize: 22, fontWeight: "bold", marginVertical: 10 },
+  subtitle: { textAlign: "center", marginBottom: 30, fontSize: 14 },
+  mainButton: { paddingHorizontal: 40, paddingVertical: 15, borderRadius: 12 },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)" },
+  unfocusedContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  focusedRow: { flexDirection: "row", height: 260 },
+  targetBox: { width: 260, position: "relative" },
+  infoText: { color: "#fff", fontSize: 16, fontWeight: "500", marginTop: 20 },
+  closeButton: {
+    position: "absolute",
+    top: 50,
+    left: 20,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    padding: 10,
+    borderRadius: 30
+  },
+  corner: {
+    position: "absolute",
+    width: 35,
+    height: 35,
+    borderColor: "#4CAF50",
+    borderWidth: 5,
+  },
+  topLeft: { top: 0, left: 0, borderRightWidth: 0, borderBottomWidth: 0 },
+  topRight: { top: 0, right: 0, borderLeftWidth: 0, borderBottomWidth: 0 },
+  bottomLeft: { bottom: 0, left: 0, borderRightWidth: 0, borderTopWidth: 0 },
+  bottomRight: { bottom: 0, right: 0, borderLeftWidth: 0, borderTopWidth: 0 },
+});

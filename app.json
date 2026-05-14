@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.foodrecipes.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -42,7 +43,12 @@
     },
     "plugins": [
       "expo-font",
-      "expo-camera"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Tarifleri okumak ve web sitelerini açmak için kameraya erişim izni gereklidir."
+        }
+      ]
     ]
   }
 }
